@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>E-commerce Dashboard</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 20px;
+    color: #222;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  header h1 {
+    font-weight: 700;
+    font-size: 2.5rem;
+    color: #2c3e50;
+  }
+
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 30px 20px;
+    box-shadow: 0 8px 16px rgb(0 0 0 / 0.1);
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgb(0 0 0 / 0.15);
+  }
+
+  .card h2 {
+    font-size: 1.25rem;
+    margin-bottom: 10px;
+    color: #34495e;
+  }
+
+  .card p {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+  }
+
+  /* Optional: make cards focusable for keyboard users */
+  .card:focus {
+    outline: 3px solid #2980b9;
+    outline-offset: 3px;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>E-commerce Management Dashboard</h1>
+    <p>Select a table to view and manage data</p>
+  </header>
+
+  <main class="dashboard">
+    <div class="card" tabindex="0" onclick="openTable('Users')">
+      <h2>Users</h2>
+      <p>Manage user accounts & roles</p>
+    </div>
+    <div class="card" tabindex="0" onclick="openTable('Products')">
+      <h2>Products</h2>
+      <p>View & update product listings</p>
+    </div>
+    <div class="card" tabindex="0" onclick="openTable('Categories')">
+      <h2>Categories</h2>
+      <p>Product categories overview</p>
+    </div>
+    <div class="card" tabindex="0" onclick="openTable('Brands')">
+      <h2>Brands</h2>
+      <p>Manage product brands</p>
+    </div>
+    <div class="card" tabindex="0" onclick="openTable('Orders')">
+      <h2>Orders</h2>
+      <p>Track orders & statuses</p>
+    </div>
+    <div class="card" tabindex="0" onclick="openTable('Order Items')">
+      <h2>Order Items</h2>
+      <p>View order details</p>
+    </div>
+    <div class="card" tabindex="0" onclick="openTable('Payments')">
+      <h2>Payments</h2>
+      <p>Manage payment records</p>
+    </div>
+    <div class="card" tabindex="0" onclick="openTable('Addresses')">
+      <h2>Addresses</h2>
+      <p>Customer shipping addresses</p>
+    </div>
+    <div class="card" tabindex="0" onclick="openTable('Cart')">
+      <h2>Cart</h2>
+      <p>Users’ shopping carts</p>
+    </div>
+    <div class="card" tabindex="0" onclick="openTable('Reviews')">
+      <h2>Reviews</h2>
+      <p>Customer product feedback</p>
+    </div>
+  </main>
+
+  <script>
+    function openTable(tableName) {
+      window.location.href=`${tableName}.html`;
+    }
+  </script>
+  <script src="./JS/index.js"></script>
+</body>
+</html>
