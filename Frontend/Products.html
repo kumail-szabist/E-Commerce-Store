@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Products Table</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 30px;
+      background: #f9fafb;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    form {
+      max-width: 900px;
+      margin: 0 auto 30px auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    form input, form select, form button {
+      padding: 10px;
+      font-size: 1rem;
+    }
+    form input, form select {
+      flex: 1 1 200px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    form button {
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    form button:hover {
+      background-color: #219150;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 8px 20px rgb(0 0 0 / 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #2980b9;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f7ff;
+    }
+    .loading, .error {
+      max-width: 900px;
+      margin: 20px auto;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Products List</h1>
+
+  <form id="addProductForm" onsubmit="addNewProduct(event)">
+    <input type="text" id="name" placeholder="Product Name" required />
+    <input type="text" id="description" placeholder="Description" required />
+    <input type="number" id="price" placeholder="Price" step="0.01" required />
+    <input type="number" id="stock_quantity" placeholder="Stock Quantity" required />
+    
+    <select id="category_id" required>
+      <option value="">Loading categories...</option>
+    </select>
+
+    <select id="brand_id" required>
+      <option value="">Loading brands...</option>
+    </select>
+
+    <button type="submit">Add Product</button>
+  </form>
+
+  <div id="loading" class="loading">Loading Products...</div>
+  <div id="error" class="error" style="display:none;"></div>
+
+  <table id="ProductsTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Price</th>
+        <th>Stock</th>
+        <th>Category ID</th>
+        <th>Brand ID</th>
+      </tr>
+    </thead>
+    <tbody id="ProductsBody"></tbody>
+  </table>
+
+<script>
+  const getProductsAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/Products";
+  const getCategoriesAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/categories";
+  const getBrandsAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/brands";
+  const addProductAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/addProduct";
+
+  async function fetchProducts() {
+    const loadingEl = document.getElementById('loading');
+    const errorEl = document.getElementById('error');
+    const table = document.getElementById('ProductsTable');
+    const tbody = document.getElementById('ProductsBody');
+
+    try {
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      table.style.display = 'none';
+
+      const response = await fetch(getProductsAPI);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const products = await response.json();
+      tbody.innerHTML = '';
+
+      products.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.product_id}</td>
+          <td>${p.name}</td>
+          <td>${p.description}</td>
+          <td>$${p.price}</td>
+          <td>${p.stock_quantity}</td>
+          <td>${p.category_id}</td>
+          <td>${p.brand_id}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      loadingEl.style.display = 'none';
+      table.style.display = 'table';
+    } catch (err) {
+      loadingEl.style.display = 'none';
+      errorEl.style.display = 'block';
+      errorEl.textContent = 'Failed to load products: ' + err.message;
+    }
+  }
+
+  async function fetchCategories() {
+    const select = document.getElementById('category_id');
+    try {
+      const res = await fetch(getCategoriesAPI);
+      if (!res.ok) throw new Error("Failed to fetch categories");
+      const categories = await res.json();
+      select.innerHTML = `<option value="" disabled selected>-- Select Category --</option>`;
+      categories.forEach(cat => {
+        select.innerHTML += `<option value="${cat.category_id}">${cat.name}</option>`;
+      });
+    } catch (err) {
+      select.innerHTML = `<option value="">Error loading categories</option>`;
+      console.error(err);
+    }
+  }
+
+  async function fetchBrands() {
+    const select = document.getElementById('brand_id');
+    try {
+      const res = await fetch(getBrandsAPI);
+      if (!res.ok) throw new Error("Failed to fetch brands");
+      const brands = await res.json();
+      select.innerHTML = `<option value="" disabled selected>-- Select Brand --</option>`;
+      brands.forEach(brand => {
+        select.innerHTML += `<option value="${brand.brand_id}">${brand.brand_name}</option>`;
+      });
+    } catch (err) {
+      select.innerHTML = `<option value="">Error loading brands</option>`;
+      console.error(err);
+    }
+  }
+
+  async function addNewProduct(event) {
+  event.preventDefault();
+
+  const name = document.getElementById('name').value;
+  const description = document.getElementById('description').value;
+  const price = parseFloat(document.getElementById('price').value);
+  const stock_quantity = parseInt(document.getElementById('stock_quantity').value);
+  const category_id = parseInt(document.getElementById('category_id').value);
+  const brand_id = parseInt(document.getElementById('brand_id').value);
+
+  const newProduct = {
+    name,
+    description,
+    price,
+    stock_quantity,
+    category_id,
+    brand_id,
+  };
+
+  try {
+    const res = await fetch(addProductAPI, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newProduct),
+    });
+
+    if (!res.ok) throw new Error("Failed to add product");
+
+    await fetchProducts(); 
+    document.getElementById('addProductForm').reset();
+  } catch (err) {
+    console.error("Error adding product:", err);
+  }
+}
+
+
+  fetchProducts();
+  fetchCategories();
+  fetchBrands();
+</script>
+
+</body>
+</html>

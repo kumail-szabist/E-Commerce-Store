@@ -5,10 +5,9 @@ require('dotenv').config();
 
 const app = express();
 
-app.use(cors({
-    origin: 'https://organic-spoon-4j65vvxw9j79c5gvx-5500.app.github.dev',
-    credentials: true
-}));
+
+app.use(cors());
+
 app.use(express.json());
 
 const PORT = process.env.PORT;
@@ -66,3 +65,65 @@ app.post('/addUser', async (req, res) => {
   }
 });
 
+
+app.post('/addCategory', async (req, res) => {
+  const { name, description } = req.body;
+
+  if (!name || !description) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING *`,
+      [name, description]
+    );
+    res.status(201).json({ message: "Category added", category: result.rows[0] });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+
+
+
+
+app.post('/addBrand', async (req, res) => {
+  const { name, description } = req.body;
+
+  if (!name || !description) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO brands (brand_name, description) VALUES ($1, $2) RETURNING *`,
+      [name, description]
+    );
+    res.status(201).json({ message: "Brand added", Brand: result.rows[0] });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+app.post('/addProduct', async (req, res) => {
+    const { name, description, price, stock_quantity, category_id, brand_id } = req.body;
+
+  if (!name || !description || !price || !stock_quantity || !category_id || !brand_id) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO products (name, description, price, stock_quantity, category_id, brand_id) VALUES ($1, $2,$3,$4,$5,$6) RETURNING *`,
+      [name, description, price, stock_quantity, category_id, brand_id]
+    );
+    res.status(201).json({ message: "Product added", Brand: result.rows[0] });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});

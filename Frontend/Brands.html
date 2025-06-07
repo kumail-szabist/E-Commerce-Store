@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brands Table</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 30px;
+      background: #f9fafb;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    form {
+      max-width: 900px;
+      margin: 0 auto 30px auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    form input, form select, form button {
+      padding: 10px;
+      font-size: 1rem;
+    }
+    form input, form select {
+      flex: 1 1 200px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    form button {
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    form button:hover {
+      background-color: #219150;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 8px 20px rgb(0 0 0 / 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #2980b9;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f7ff;
+    }
+    .loading, .error {
+      max-width: 900px;
+      margin: 20px auto;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Brands List</h1>
+
+
+<form id="addBrandsForm" onsubmit="addNewBrands(event)">
+
+    <input type="text" id="Name" placeholder="Name" required />
+    <input type="text" id="Description" placeholder="Description" required />
+   
+<button type="submit">Add</button>
+  </form>
+
+  <div id="loading" class="loading">Loading Data...</div>
+  <div id="error" class="error" style="display:none;"></div>
+
+  <table id="BrandsTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Brand ID</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody id="BrandsBody"></tbody>
+  </table>
+
+<script>
+  const getBrandsAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/brands";
+ 
+
+  async function fetchBrands() {
+    const loadingEl = document.getElementById('loading');
+    const errorEl = document.getElementById('error');
+    const table = document.getElementById('BrandsTable');
+    const tbody = document.getElementById('BrandsBody');
+
+    try {
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      table.style.display = 'none';
+
+      const response = await fetch(getBrandsAPI);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const Brands = await response.json();
+      tbody.innerHTML = '';
+
+      Brands.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${c.brand_id}</td>
+          <td>${c.brand_name}</td>
+          <td>${c.description}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      loadingEl.style.display = 'none';
+      table.style.display = 'table';
+    } catch (err) {
+      loadingEl.style.display = 'none';
+      errorEl.style.display = 'block';
+      errorEl.textContent = 'Failed to load users: ' + err.message;
+    }
+  }
+  fetchBrands();
+
+
+async function addNewBrands(event) {
+  event.preventDefault();
+  const name = document.getElementById('Name').value;
+  const description = document.getElementById('Description').value;
+  
+  try {
+    const res = await fetch('https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/addBrand', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name, description})
+    });
+   
+    fetchBrands();
+    document.getElementById('addBrandsForm').reset();
+  } catch (err) {
+    console.error("Error adding user:", err);
+  }
+}
+</script>
+
+</body>
+</html>
