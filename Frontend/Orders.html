@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orders Table</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 30px;
+      background: #f9fafb;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    form {
+      max-width: 900px;
+      margin: 0 auto 30px auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    form input, form select, form button {
+      padding: 10px;
+      font-size: 1rem;
+    }
+    form input, form select {
+      flex: 1 1 200px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    form button {
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    form button:hover {
+      background-color: #219150;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 8px 20px rgb(0 0 0 / 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #34495e;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f7ff;
+    }
+    .loading, .error {
+      max-width: 900px;
+      margin: 20px auto;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Orders List</h1>
+
+<form id="orderForm" onsubmit="submitOrder(event)">
+  <input type="number" id="user_id" placeholder="User ID" required />
+  <input type="number" id="shipping_address_id" placeholder="Shipping Address ID" required />
+  <input type="number" id="total_amount" placeholder="Total Amount" required />
+  <select id="payment_method" required>
+    <option value="">Select Payment Method</option>
+    <option value="cash_on_delivery">Cash on Delivery</option>
+    <option value="credit_card">Credit Card</option>
+    <option value="paypal">Paypal</option>
+  </select>
+  <button type="submit">Add Order</button>
+</form>
+
+<div id="loading" class="loading">Loading Orders...</div>
+<div id="error" class="error" style="display:none;"></div>
+
+<table id="ordersTable" style="display:none;">
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>User ID</th>
+      <th>Order Date</th>
+      <th>Status</th>
+      <th>Total Amount</th>
+      <th>Payment ID</th>
+      <th>Shipping Address ID</th>
+    </tr>
+  </thead>
+  <tbody id="ordersBody"></tbody>
+</table>
+
+<script>
+  const getOrdersAPI = 'https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/Orders';
+  const getUserIDAPI = 'https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/userID';
+  const getAddressAPI = 'https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/Addresses';
+  const postOrderAPI = 'https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/addOrder';
+
+  async function fetchOrders() {
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const table = document.getElementById('ordersTable');
+    const tbody = document.getElementById('ordersBody');
+
+    try {
+      loading.style.display = 'block';
+      error.style.display = 'none';
+      table.style.display = 'none';
+
+      const res = await fetch(getOrdersAPI);
+      if (!res.ok) throw new Error("Failed to load orders");
+
+      const orders = await res.json();
+      tbody.innerHTML = '';
+
+      orders.forEach(o => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${o.order_id}</td>
+          <td>${o.user_id}</td>
+          <td>${o.order_date}</td>
+          <td>${o.status}</td>
+          <td>${o.total_amount}</td>
+          <td>${o.payment_id}</td>
+          <td>${o.shipping_address_id}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      loading.style.display = 'none';
+      table.style.display = 'table';
+    } catch (err) {
+      loading.style.display = 'none';
+      error.style.display = 'block';
+      error.textContent = 'Error loading orders: ' + err.message;
+    }
+  }
+async function isValidUser(userId) {
+  const res = await fetch(getUserIDAPI);
+  if (!res.ok) return false;
+  const users = await res.json();
+
+  for (let i = 0; i < users.length; i++) {
+    if (users[i].user_id == userId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function isValidAddress(addressId) {
+  const res = await fetch(getAddressAPI);
+  if (!res.ok) return false;
+  const addresses = await res.json();
+
+  for (let i = 0; i < addresses.length; i++) {
+    if (addresses[i].address_id == addressId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+ async function submitOrder(e) {
+  e.preventDefault();
+  const user_id = document.getElementById('user_id').value;
+  const shipping_address_id = document.getElementById('shipping_address_id').value;
+  const total_amount = document.getElementById('total_amount').value;
+  const payment_method = document.getElementById('payment_method').value;
+
+  const validUser = await isValidUser(user_id);
+  if (!validUser) return alert('Invalid user ID');
+
+  const validAddress = await isValidAddress(shipping_address_id);
+  if (!validAddress) return alert('Invalid address ID');
+
+  const body = {
+    user_id: parseInt(user_id),
+    total_amount: parseFloat(total_amount),
+    shipping_address_id: parseInt(shipping_address_id),
+    payment_method 
+  };
+
+  try {
+    const res = await fetch(postOrderAPI, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error("Order failed to save");
+
+    document.getElementById('orderForm').reset();
+    await fetchOrders();
+  } catch (err) {
+    alert('Error placing order: ' + err.message);
+  }
+}
+
+  fetchOrders();
+</script>
+
+</body>
+</html>

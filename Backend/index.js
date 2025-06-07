@@ -36,6 +36,16 @@ app.get('/getData/:table', async (req, res) => {
 });
 
 
+app.get('/userID', async (req, res) => {
+    const { table } = req.params;
+    try {
+        const result = await pool.query(`SELECT user_id FROM Users`);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ Error: err.message });
+    }
+});
+
 app.get('/cart', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM cart');
@@ -125,5 +135,112 @@ app.post('/addProduct', async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+app.post('/addAddress', async (req, res) => {
+  const {
+    user_id,
+    line1,
+    city,
+    state,
+    postal_code,
+    country,
+    phone
+  } = req.body;
+
+  if (!user_id || !line1 || !city || !state || !postal_code || !country || !phone) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  try {
+    const result = await pool.query(`
+      INSERT INTO Addresses (user_id, line1, city, state, postal_code, country, phone)
+      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,[user_id, line1, city, state, postal_code, country, phone]);
+
+    res.status(201).json({ message: 'Address added successfully' });
+  } catch (err) {
+    console.error('Error inserting address:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+app.post('/addOrder', async (req, res) => {
+  const { user_id, total_amount, shipping_address_id, payment_method } = req.body;
+
+  try {
+    // 1. Insert payment
+    const paymentResult = await pool.query(
+      `INSERT INTO Payments (payment_method, amount_paid, payment_status, payment_date)
+       VALUES ($1, $2, 'completed', CURRENT_TIMESTAMP)
+       RETURNING payment_id`,
+      [payment_method, total_amount]
+    );
+
+    const payment_id = paymentResult.rows[0].payment_id;
+
+    await pool.query(
+      `INSERT INTO Orders (user_id, order_date, status, total_amount, payment_id, shipping_address_id)
+       VALUES ($1, CURRENT_TIMESTAMP, 'paid', $2, $3, $4)`,
+      [user_id, total_amount, payment_id, shipping_address_id]
+    );
+
+    res.status(201).json({ message: '✅ Order and Payment saved successfully' });
+  } catch (err) {
+    console.error('Error inserting order & payment:', err);
+    res.status(500).json({ error: 'Server error while saving order' });
+  }
+});
+
+
+
+app.post('/addReview', async (req, res) => {
+  const { user_id, product_id, rating, comment } = req.body;
+
+  if (!user_id || !product_id || rating == null || comment == null) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+
+  try {
+    const insertQuery = `
+      INSERT INTO Reviews (user_id, product_id, rating, comment)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `;
+    const result = await pool.query(insertQuery, [user_id, product_id, rating, comment]);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error inserting review:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/addCoupon', async (req, res) => {
+  const { code, discount_percent, valid_from, valid_to, usage_limit } = req.body;
+
+  if (!code || discount_percent == null || !valid_from || !valid_to || usage_limit == null) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+
+  try {
+    const insertQuery = `
+      INSERT INTO coupons (code, discount_percent, valid_from, valid_to, usage_limit)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+    `;
+    const result = await pool.query(insertQuery, [
+      code,
+      discount_percent,
+      valid_from,
+      valid_to,
+      usage_limit
+    ]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error inserting coupon:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });

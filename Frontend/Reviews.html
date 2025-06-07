@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reviews Table</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 30px;
+      background: #f9fafb;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    form {
+      max-width: 900px;
+      margin: 0 auto 30px auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    form input, form select, form button {
+      padding: 10px;
+      font-size: 1rem;
+    }
+    form input, form select {
+      flex: 1 1 200px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    form button {
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    form button:hover {
+      background-color: #219150;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 8px 20px rgb(0 0 0 / 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #2980b9;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f7ff;
+    }
+    .loading, .error {
+      max-width: 900px;
+      margin: 20px auto;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Reviews List</h1>
+
+
+<form id="addReviewsForm" onsubmit="addNewReviews(event)">
+        <input type="number" placeholder="User ID"  id="userID" required />
+    <input type="number" placeholder="Product ID" id="productID" required />
+
+<label>Rating</label>
+    <input type="range" min="0" max="5" id="Rating" required />
+    <input type="text" id="Review" placeholder="Review" required />
+   
+<button type="submit">Add</button>
+  </form>
+
+  <div id="loading" class="loading">Loading Data...</div>
+  <div id="error" class="error" style="display:none;"></div>
+
+  <table id="ReviewsTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Review ID</th>
+        <th>User ID</th>
+        <th>Product ID</th>
+        <th>Rating</th>
+        <th>Reviews</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="ReviewsBody"></tbody>
+  </table>
+
+<script>
+  const getReviewsAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/Reviews";
+   const getProductAPI= "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/products";
+  const getUserAPI= "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/Users";
+
+
+  async function fetchReviews() {
+    const loadingEl = document.getElementById('loading');
+    const errorEl = document.getElementById('error');
+    const table = document.getElementById('ReviewsTable');
+    const tbody = document.getElementById('ReviewsBody');
+
+    try {
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      table.style.display = 'none';
+
+      const response = await fetch(getReviewsAPI);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const Reviews = await response.json();
+      tbody.innerHTML = '';
+
+      Reviews.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${c.review_id}</td>
+          <td>${c.user_id}</td>
+          <td>${c.product_id}</td>
+          <td>${c.rating}</td>
+          <td>${c.comment}</td>
+          <td>${c.review_date}</td>
+
+                  `;
+        tbody.appendChild(tr);
+      });
+
+      loadingEl.style.display = 'none';
+      table.style.display = 'table';
+    } catch (err) {
+      loadingEl.style.display = 'none';
+      errorEl.style.display = 'block';
+      errorEl.textContent = 'Failed to load users: ' + err.message;
+    }
+  }
+  fetchReviews();
+
+
+
+async function isValidUser(userId) {
+  const res = await fetch(getUserAPI);
+  if (!res.ok) return false;
+  const users = await res.json();
+
+  for (let i = 0; i < users.length; i++) {
+    if (users[i].user_id == userId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function isValidProduct(productID) {
+  const res = await fetch(getProductAPI);
+  if (!res.ok) return false;
+  const product = await res.json();
+
+  for (let i = 0; i < product.length; i++) {
+    if (product[i].product_id == productID) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+
+
+
+
+async function addNewReviews(event) {
+  event.preventDefault();
+  
+  const UserID = document.getElementById('userID').value;
+  const ProductID = document.getElementById('productID').value;
+  const Review = document.getElementById('Review').value;
+  const Rating = document.getElementById('Rating').value;
+
+  if (!(await isValidUser(UserID)) || !(await isValidProduct(ProductID))) {
+    alert("Invalid User or Product ID");
+    return;
+  }
+
+  try {
+    const res = await fetch('https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/addReview', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: UserID,
+        product_id: ProductID,
+        rating: Rating,
+        comment: Review
+      })
+    });
+
+    if (!res.ok) throw new Error('Failed to add review');
+    
+    fetchReviews();
+    document.getElementById('addReviewsForm').reset();
+  } catch (err) {
+    console.error("Error adding review:", err);
+  }
+}
+
+</script>
+
+</body>
+</html>

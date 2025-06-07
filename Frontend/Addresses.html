@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Addresses Table</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 30px;
+      background: #f9fafb;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    form {
+      max-width: 900px;
+      margin: 0 auto 30px auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    form input, form select, form button {
+      padding: 10px;
+      font-size: 1rem;
+    }
+    form input, form select {
+      flex: 1 1 200px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    form button {
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    form button:hover {
+      background-color: #219150;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 8px 20px rgb(0 0 0 / 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #2980b9;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f7ff;
+    }
+    .loading, .error {
+      max-width: 900px;
+      margin: 20px auto;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Addresses List</h1>
+
+
+<form id="addAddressForm" onsubmit="addNewAddress(event)">
+    <input type="number" id="userId" placeholder="Enter valid User ID" required />
+    <input type="text" id="line1" placeholder="Address" required />
+    <input type="text" id="city" placeholder="City" required />
+    <input type="text" id="state" placeholder="State" required />
+    <input type="number" id="postalCode" placeholder="Postal Code" required />
+    <input type="text" id="country" placeholder="Country" required />
+    <input type="number" id="phone" placeholder="Phone" required />
+   
+<button type="submit">Add</button>
+  </form>
+
+  <div id="loading" class="loading">Loading Data...</div>
+  <div id="error" class="error" style="display:none;"></div>
+
+  <table id="AddressTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Address ID</th>
+        <th>User ID</th>
+        <th>Address</th>
+        <th>City</th>
+        <th>State</th>
+        <th>Postal Code</th>
+        <th>Country</th>
+        <th>Phone</th>
+      </tr>
+    </thead>
+    <tbody id="AddressBody"></tbody>
+  </table>
+
+<script>
+  const getAddressAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/Addresses";
+  const getUserIDAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/userID";
+
+  async function fetchAddress() {
+    const loadingEl = document.getElementById('loading');
+    const errorEl = document.getElementById('error');
+    const table = document.getElementById('AddressTable');
+    const tbody = document.getElementById('AddressBody');
+
+    try {
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      table.style.display = 'none';
+
+      const response = await fetch(getAddressAPI);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const Address = await response.json();
+      tbody.innerHTML = '';
+
+      Address.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${c.address_id}</td>
+          <td>${c.user_id}</td>
+          <td>${c.line1}</td>
+          <td>${c.city}</td>
+          <td>${c.state}</td>
+          <td>${c.postal_code}</td>
+          <td>${c.country}</td>
+          <td>${c.phone}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      loadingEl.style.display = 'none';
+      table.style.display = 'table';
+    } catch (err) {
+      loadingEl.style.display = 'none';
+      errorEl.style.display = 'block';
+      errorEl.textContent = 'Failed to load addresses: ' + err.message;
+    }
+  }
+
+  fetchAddress();
+
+  async function fetchUserIDs(attemptID) {
+    try {
+      const response = await fetch(getUserIDAPI);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const IDs = await response.json();
+
+      // Fix: use `some()` instead of forEach with return
+      return IDs.some(user => user.user_id == attemptID);
+    } catch (err) {
+      const errorEl = document.getElementById('error');
+      errorEl.style.display = 'block';
+      errorEl.textContent = 'Failed to verify User ID: ' + err.message;
+      return false;
+    }
+  }
+
+  async function addNewAddress(event) {
+    event.preventDefault();
+
+    const id = document.getElementById('userId').value;
+
+    const isValidUser = await fetchUserIDs(id);
+    if (!isValidUser) {
+      alert("Please enter a valid User ID!");
+      return;
+    }
+
+    const line1 = document.getElementById('line1').value;
+    const city = document.getElementById('city').value;
+    const state = document.getElementById('state').value;
+    const postal_code = document.getElementById('postalCode').value;
+    const country = document.getElementById('country').value;
+    const phone = document.getElementById('phone').value;
+
+    try {
+      const res = await fetch('https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/addAddress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user_id: parseInt(id),
+          line1,
+          city,
+          state,
+          postal_code: parseInt(postal_code),
+          country,
+          phone
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to add address");
+
+      await fetchAddress(); // refresh table
+      document.getElementById('addAddressForm').reset();
+    } catch (err) {
+      console.error("Error adding address:", err);
+    }
+  }
+</script>
+
+</body>
+</html>
