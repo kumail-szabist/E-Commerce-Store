@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payments List</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 40px;
+      background-color: #f4f6f8;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    table {
+      width: 100%;
+      max-width: 1000px;
+      margin: auto;
+      border-collapse: collapse;
+      background-color: white;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #2980b9;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .status-completed {
+      color: green;
+      font-weight: bold;
+    }
+    .status-pending {
+      color: orange;
+      font-weight: bold;
+    }
+    .loading {
+      text-align: center;
+      font-size: 1.2rem;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Payment Records</h1>
+
+  <div class="loading" id="loading">Loading payment data...</div>
+
+  <table id="paymentTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Payment ID</th>
+        <th>Method</th>
+        <th>Amount Paid</th>
+        <th>Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="paymentBody"></tbody>
+  </table>
+
+  <script>
+    const getPaymentsAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/payments";
+
+    async function fetchPayments() {
+      const loading = document.getElementById('loading');
+      const table = document.getElementById('paymentTable');
+      const tbody = document.getElementById('paymentBody');
+
+      try {
+        const res = await fetch(getPaymentsAPI);
+        if (!res.ok) throw new Error("Failed to fetch payments");
+
+        const data = await res.json();
+
+        data.forEach(p => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${p.payment_id}</td>
+            <td>${p.payment_method}</td>
+            <td>$${p.amount_paid}</td>
+            <td>${p.payment_date}</td>
+            <td class="status-${p.payment_status}">${p.payment_status}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        loading.style.display = 'none';
+        table.style.display = 'table';
+
+      } catch (err) {
+        loading.innerText = "Failed to load data: " + err.message;
+      }
+    }
+
+    fetchPayments();
+  </script>
+
+</body>
+</html>

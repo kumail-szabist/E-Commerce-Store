@@ -84,6 +84,7 @@
   <input type="number" id="user_id" placeholder="User ID" required />
   <input type="number" id="shipping_address_id" placeholder="Shipping Address ID" required />
   <input type="number" id="total_amount" placeholder="Total Amount" required />
+    <input type="number" id="coupon" placeholder="Coupon Code" />
   <select id="payment_method" required>
     <option value="">Select Payment Method</option>
     <option value="cash_on_delivery">Cash on Delivery</option>
@@ -112,11 +113,12 @@
 </table>
 
 <script>
+  
   const getOrdersAPI = 'https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/Orders';
   const getUserIDAPI = 'https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/userID';
   const getAddressAPI = 'https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/Addresses';
+  const getCouponAPI = 'https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/Coupons';
   const postOrderAPI = 'https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/addOrder';
-
   async function fetchOrders() {
     const loading = document.getElementById('loading');
     const error = document.getElementById('error');
@@ -181,31 +183,72 @@ async function isValidAddress(addressId) {
   }
   return false;
 }
+let discount = null;
+
+async function isValidCoupon(code) {
+  try {
+    const res = await fetch(getCouponAPI);
+    if (!res.ok) return false;
+
+    const coupons = await res.json();
+    const now = new Date();
+
+    const matched = coupons.find(c => c.code === code);
+
+    if (!matched) return false;
+
+    const validFrom = new Date(matched.valid_from);
+    const validTo = new Date(matched.valid_to);
+
+    if (now >= validFrom && now <= validTo) {
+      discount = matched.discount_percent;
+      return true;
+    } else {
+      return false;
+    }
+
+  } catch (err) {
+    console.error('Error validating coupon:', err);
+    return false;
+  }
+}
+
+
 
  async function submitOrder(e) {
   e.preventDefault();
+
   const user_id = document.getElementById('user_id').value;
   const shipping_address_id = document.getElementById('shipping_address_id').value;
-  const total_amount = document.getElementById('total_amount').value;
+  let total_amount = parseFloat(document.getElementById('total_amount').value);
   const payment_method = document.getElementById('payment_method').value;
+  const coupon_Code = document.getElementById('coupon').value.trim();
 
   const validUser = await isValidUser(user_id);
-  if (!validUser) return alert('Invalid user ID');
+  if (!validUser) return alert(' Invalid user ID');
 
   const validAddress = await isValidAddress(shipping_address_id);
-  if (!validAddress) return alert('Invalid address ID');
+  if (!validAddress) return alert(' Invalid address ID');
+
+  if (coupon_Code !== '') {
+    const validCoupon = await isValidCoupon(coupon_Code);
+    if (!validCoupon) return alert(' Coupon Expired or Invalid');
+
+    total_amount = total_amount - (total_amount * discount / 100);
+    total_amount = parseFloat(total_amount); 
+  }
 
   const body = {
     user_id: parseInt(user_id),
-    total_amount: parseFloat(total_amount),
+    total_amount,
     shipping_address_id: parseInt(shipping_address_id),
-    payment_method 
+    payment_method
   };
 
   try {
     const res = await fetch(postOrderAPI, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
 
@@ -214,7 +257,7 @@ async function isValidAddress(addressId) {
     document.getElementById('orderForm').reset();
     await fetchOrders();
   } catch (err) {
-    alert('Error placing order: ' + err.message);
+    alert(' Error placing order: ' + err.message);
   }
 }
 

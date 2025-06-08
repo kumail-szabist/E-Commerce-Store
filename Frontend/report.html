@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f9;
+      padding: 20px;
+    }
+    h2 {
+      color: #333;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 5px;
+    }
+    .chart-container {
+      margin-bottom: 40px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chart-container">
+    <h2>Products by Category</h2>
+    <div id="piechart-category" style="width:600px; height:400px;"></div>
+  </div>
+
+  <div class="chart-container">
+    <h2>Products by Brand</h2>
+    <div id="piechart-brand" style="width:600px; height:400px;"></div>
+  </div>
+
+  <div class="chart-container">
+    <h2>Total Payments by Method</h2>
+    <canvas id="paymentChart" style="width:100%; max-width:600px;"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <h2>Table Counts</h2>
+    <table id="countsTable">
+      <thead>
+        <tr>
+          <th>Table Name</th>
+          <th>Record Count</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+<script>
+const getProductsAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/Products";
+const getCategoriesAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/categories";
+const getBrandsAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/brands";
+const getPaymentsAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/payments";
+const getCountAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getCount/";
+
+const tables = ["products", "categories", "brands", "payments", "orders", "order_items", "users", "coupons", "addresses", "cart"];
+
+async function fetchData() {
+  const productsRes = await fetch(getProductsAPI);
+  const categoriesRes = await fetch(getCategoriesAPI);
+  const brandsRes = await fetch(getBrandsAPI);
+  const paymentsRes = await fetch(getPaymentsAPI);
+
+  const products = await productsRes.json();
+  const categories = await categoriesRes.json();
+  const brands = await brandsRes.json();
+  const payments = await paymentsRes.json();
+
+  drawCategoryPie(products, categories);
+  drawBrandPie(products, brands);
+  drawPaymentChart(payments);
+  loadCounts();
+}
+
+function drawCategoryPie(products, categories) {
+  const map = {};
+  products.forEach(p => {
+    map[p.category_id] = (map[p.category_id] || 0) + 1;
+  });
+  const dataArray = [["Category", "Count"]];
+  categories.forEach(cat => {
+    dataArray.push([cat.name, map[cat.category_id] || 0]);
+  });
+  const data = google.visualization.arrayToDataTable(dataArray);
+  const options = { title: "Products by Category" };
+  const chart = new google.visualization.PieChart(document.getElementById('piechart-category'));
+  chart.draw(data, options);
+}
+
+function drawBrandPie(products, brands) {
+  const map = {};
+  products.forEach(p => {
+    map[p.brand_id] = (map[p.brand_id] || 0) + 1;
+  });
+  const dataArray = [["Brand", "Count"]];
+  brands.forEach(brand => {
+    dataArray.push([brand.brand_name, map[brand.brand_id] || 0]);
+  });
+  const data = google.visualization.arrayToDataTable(dataArray);
+  const options = { title: "Products by Brand" };
+  const chart = new google.visualization.PieChart(document.getElementById('piechart-brand'));
+  chart.draw(data, options);
+}
+
+function drawPaymentChart(payments) {
+  const paymentMap = {
+    "credit_card": 0,
+    "paypal": 0,
+    "cash_on_delivery": 0
+  };
+  payments.forEach(p => {
+    paymentMap[p.payment_method] += parseFloat(p.amount_paid);
+  });
+
+  const xValues = ["Credit Card", "PayPal", "Cash on Delivery"];
+  const yValues = [paymentMap.credit_card, paymentMap.paypal, paymentMap.cash_on_delivery];
+  const colors = ["#007bff", "#28a745", "#ffc107"];
+
+  new Chart("paymentChart", {
+    type: "bar",
+    data: {
+      labels: xValues,
+      datasets: [{
+        backgroundColor: colors,
+        data: yValues
+      }]
+    },
+    options: {
+      legend: { display: false },
+      title: { display: true, text: "Total Payments by Method" },
+      scales: {
+        yAxes: [{
+          ticks: { beginAtZero: true }
+        }]
+      }
+    }
+  });
+}
+
+async function loadCounts() {
+  const tbody = document.querySelector("#countsTable tbody");
+  for (let table of tables) {
+    try {
+      const res = await fetch(getCountAPI + table);
+      const json = await res.json();
+      const count = json[0]?.count || 0;
+      const row = `<tr><td>${table}</td><td>${count}</td></tr>`;
+      tbody.innerHTML += row;
+    } catch (err) {
+      const row = `<tr><td>${table}</td><td>Error</td></tr>`;
+      tbody.innerHTML += row;
+    }
+  }
+}
+
+// Load charts
+google.charts.load('current', { packages: ['corechart'] });
+google.charts.setOnLoadCallback(fetchData);
+</script>
+</body>
+</html>

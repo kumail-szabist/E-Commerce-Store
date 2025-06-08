@@ -35,6 +35,15 @@ app.get('/getData/:table', async (req, res) => {
     }
 });
 
+app.get('/getCount/:table', async (req, res) => {
+    const { table } = req.params;
+    try {
+        const result = await pool.query(`SELECT count(*) FROM ${table}`);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ Error: err.message });
+    }
+});
 
 app.get('/userID', async (req, res) => {
     const { table } = req.params;
@@ -171,7 +180,6 @@ app.post('/addOrder', async (req, res) => {
   const { user_id, total_amount, shipping_address_id, payment_method } = req.body;
 
   try {
-    // 1. Insert payment
     const paymentResult = await pool.query(
       `INSERT INTO Payments (payment_method, amount_paid, payment_status, payment_date)
        VALUES ($1, $2, 'completed', CURRENT_TIMESTAMP)
@@ -187,7 +195,7 @@ app.post('/addOrder', async (req, res) => {
       [user_id, total_amount, payment_id, shipping_address_id]
     );
 
-    res.status(201).json({ message: '✅ Order and Payment saved successfully' });
+    res.status(201).json({ message: ' Order and Payment saved successfully' });
   } catch (err) {
     console.error('Error inserting order & payment:', err);
     res.status(500).json({ error: 'Server error while saving order' });
@@ -234,13 +242,28 @@ app.post('/addCoupon', async (req, res) => {
       code,
       discount_percent,
       valid_from,
-      valid_to,
-      usage_limit
-    ]);
+      valid_to
+        ]);
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error inserting coupon:', err);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+app.post('/addOrderItem', async (req, res) => {
+    const {  order_id, product_id, quantity, price_at_purchase } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO order_items ( order_id, product_id, quantity, price_at_purchase) VALUES ($1, $2,$3,$4) RETURNING *`,
+      [ order_id, product_id, quantity, price_at_purchase]
+    );
+    res.status(201).json({ message: "Order Item added", Brand: result.rows[0] });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
