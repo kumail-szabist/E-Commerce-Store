@@ -2,12 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 require('dotenv').config();
-
 const app = express();
-
-
 app.use(cors());
-
 app.use(express.json());
 
 const PORT = process.env.PORT;
@@ -19,6 +15,7 @@ app.listen(PORT, () => {
 app.get('/', async (req, res) => {
     try {
         res.json('Welcome to E-Commerce Database!');
+         console.log(`Backend connected!`);
     } catch (err) {
         res.status(500).json({ Error: err.message });
     }
@@ -55,15 +52,6 @@ app.get('/userID', async (req, res) => {
     }
 });
 
-app.get('/cart', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM cart');
-        res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ Error: err.message });
-    }
-});
-
 
 app.post('/addUser', async (req, res) => {
   const { name, email, role } = req.body;
@@ -71,7 +59,6 @@ app.post('/addUser', async (req, res) => {
   if (!name || !email || !role) {
     return res.status(400).json({ error: "Missing required fields" });
   }
-
   try {
     const result = await pool.query(
       `INSERT INTO users (name, email, password_hash,role, created_at) VALUES ($1, $2, RANDOM(), $3, NOW()) RETURNING *`,
@@ -88,10 +75,6 @@ app.post('/addUser', async (req, res) => {
 app.post('/addCategory', async (req, res) => {
   const { name, description } = req.body;
 
-  if (!name || !description) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
   try {
     const result = await pool.query(
       `INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING *`,
@@ -105,16 +88,8 @@ app.post('/addCategory', async (req, res) => {
 });
 
 
-
-
-
-
 app.post('/addBrand', async (req, res) => {
   const { name, description } = req.body;
-
-  if (!name || !description) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
 
   try {
     const result = await pool.query(
@@ -127,7 +102,6 @@ app.post('/addBrand', async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
 
 app.post('/addProduct', async (req, res) => {
     const { name, description, price, stock_quantity, category_id, brand_id } = req.body;
@@ -159,10 +133,6 @@ app.post('/addAddress', async (req, res) => {
     phone
   } = req.body;
 
-  if (!user_id || !line1 || !city || !state || !postal_code || !country || !phone) {
-    return res.status(400).json({ error: 'All fields are required' });
-  }
-
   try {
     const result = await pool.query(`
       INSERT INTO Addresses (user_id, line1, city, state, postal_code, country, phone)
@@ -174,7 +144,6 @@ app.post('/addAddress', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 
 app.post('/addOrder', async (req, res) => {
   const { user_id, total_amount, shipping_address_id, payment_method } = req.body;
@@ -203,13 +172,8 @@ app.post('/addOrder', async (req, res) => {
 });
 
 
-
 app.post('/addReview', async (req, res) => {
   const { user_id, product_id, rating, comment } = req.body;
-
-  if (!user_id || !product_id || rating == null || comment == null) {
-    return res.status(400).json({ error: 'Missing fields' });
-  }
 
   try {
     const insertQuery = `
@@ -226,16 +190,12 @@ app.post('/addReview', async (req, res) => {
 });
 
 app.post('/addCoupon', async (req, res) => {
-  const { code, discount_percent, valid_from, valid_to, usage_limit } = req.body;
-
-  if (!code || discount_percent == null || !valid_from || !valid_to || usage_limit == null) {
-    return res.status(400).json({ error: 'Missing fields' });
-  }
+  const { code, discount_percent, valid_from, valid_to } = req.body;
 
   try {
     const insertQuery = `
-      INSERT INTO coupons (code, discount_percent, valid_from, valid_to, usage_limit)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO coupons (code, discount_percent, valid_from, valid_to)
+      VALUES ($1, $2, $3, $4)
       RETURNING *;
     `;
     const result = await pool.query(insertQuery, [
@@ -267,3 +227,8 @@ app.post('/addOrderItem', async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+
+
+
+

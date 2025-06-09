@@ -36,9 +36,11 @@
       color: white;
     }
   </style>
+    <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
-
+<h1>Report/Analysis</h1>
   <div class="chart-container">
     <h2>Products by Category</h2>
     <div id="piechart-category" style="width:600px; height:400px;"></div>
@@ -74,7 +76,7 @@ const getBrandsAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.de
 const getPaymentsAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getData/payments";
 const getCountAPI = "https://organic-spoon-4j65vvxw9j79c5gvx-3000.app.github.dev/getCount/";
 
-const tables = ["products", "categories", "brands", "payments", "orders", "order_items", "users", "coupons", "addresses", "cart"];
+const tables = ["products", "categories", "brands", "payments", "orders", "order_items", "users", "coupons", "addresses","reviews"];
 
 async function fetchData() {
   const productsRes = await fetch(getProductsAPI);
