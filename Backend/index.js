@@ -59,9 +59,10 @@ app.post('/addUser', async (req, res) => {
   if (!name || !email || !role) {
     return res.status(400).json({ error: "Missing required fields" });
   }
+
   try {
     const result = await pool.query(
-      `INSERT INTO users (name, email, password_hash,role, created_at) VALUES ($1, $2, RANDOM(), $3, NOW()) RETURNING *`,
+      `INSERT INTO users (name, email, role, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *`,
       [name, email, role]
     );
     res.status(201).json({ message: "User added"});
@@ -227,8 +228,5 @@ app.post('/addOrderItem', async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
-
-
 
 
